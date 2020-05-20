@@ -1,25 +1,163 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "ReportAssignment"
+output:  md_document
+keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+# Peer-graded Assignment: Course Project 1
+
+## Code for reading in the dataset and/or processing the data
+
+```{r}
+echo = TRUE
+URL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+temp <- tempfile()
+download.file(URL,temp)
+data <- read.csv(unz(temp, "activity.csv"))
+unlink(temp)
+```
+
+## Histogram of the total number of steps taken each day
+
+```{r  echo=TRUE}
+Sum1 <- tapply(data$steps, data$date, sum, na.rm=TRUE)
+hist(Sum1, xlab = "Total number of steps per day", main = "histogram of steps per day")
+```
+
+## Mean and median number of steps taken each day
 
 
+```{r  echo=TRUE}
+Mean1 <- mean(Sum1)
+Mean1
+Median1 <- median(Sum1)
+Median1
+```
 
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+## Time series plot of the average number of steps taken
 
 
+```{r  echo=TRUE}
+AvgStepInterval <- tapply(data$steps, data$interval, mean, na.rm=T)
 
-## Are there differences in activity patterns between weekdays and weekends?
+plot(AvgStepInterval ~ unique(data$interval), type="l", xlab = "Intervals")
+```
+
+## The 5-minute interval that, on average, contains the maximum number of steps
+
+
+```{r  echo=TRUE}
+AvgStepInterval[which.max(AvgStepInterval)]
+```
+
+## Code to describe and show a strategy for inputing missing data
+
+
+```{r  echo=TRUE}
+sum(is.na(data))
+
+ASI <- as.data.frame(AvgStepInterval)
+ASI <-tibble::rownames_to_column(ASI, "test") 
+
+New <- data
+
+for (i in unique(New$interval)) {
+  New$steps[is.na(New$steps) & New$interval == i] <- round(mean(New$steps[New$interval == i], na.rm = T))
+}
+
+```
+
+## Histogram of the total number of steps taken each day after missing values are imputed
+
+
+```{r  echo=TRUE}
+Sum2 <- tapply(New$steps, New$date, sum)
+hist(Sum2, xlab = "Total number of steps per day", main = "histogram of steps per day")
+```
+
+## Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+
+```{r  echo=TRUE}
+date <- as.Date(New$date)
+weekdayType <- ifelse(weekdays(date) %in% c("Satuday", "Sunday"),"weekend", "weekday")
+
+New <- cbind(New,weekdayType)
+
+StepsWeekday <- aggregate(steps ~ interval+weekdayType, data = New, FUN = mean)
+
+
+library(ggplot2)
+ggplot(StepsWeekday, aes(x = interval, y = steps)) + 
+  geom_line(col = "red", size = 1) + 
+  facet_wrap(~ weekdayType, nrow=2, ncol=1) + 
+  labs(x = "Interval", y = "Number of Steps")
+```
+
+## All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
+
+
+```{r  echo=TRUE}
+URL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+temp <- tempfile()
+download.file(URL,temp)
+data <- read.csv(unz(temp, "activity.csv"))
+unlink(temp)
+
+
+Sum1 <- tapply(data$steps, data$date, sum, na.rm=TRUE)
+hist(Sum1, xlab = "Total number of steps per day", main = "histogram of steps per day")
+
+Mean1 <- mean(Sum1)
+Mean1
+Median1 <- median(Sum1)
+Median1
+
+AvgStepInterval <- tapply(data$steps, data$interval, mean, na.rm=T)
+
+plot(AvgStepInterval ~ unique(data$interval), type="l", xlab = "Intervals")
+
+AvgStepInterval[which.max(AvgStepInterval)]
+
+sum(is.na(data))
+
+ASI <- as.data.frame(AvgStepInterval)
+ASI <-tibble::rownames_to_column(ASI, "test") 
+
+New <- data
+
+for (i in unique(New$interval)) {
+  New$steps[is.na(New$steps) & New$interval == i] <- round(mean(New$steps[New$interval == i], na.rm = T))
+}
+
+Sum2 <- tapply(New$steps, New$date, sum)
+hist(Sum2, xlab = "Total number of steps per day", main = "histogram of steps per day")
+
+Mean2 <- mean(Sum2)
+Mean2
+Median2 <- median(Sum2)
+Median2
+
+Mean2 - Mean1
+Median2 - Median1
+
+date <- as.Date(New$date)
+weekdayType <- ifelse(weekdays(date) %in% c("Satuday", "Sunday"),"weekend", "weekday")
+
+New <- cbind(New,weekdayType)
+
+StepsWeekday <- aggregate(steps ~ interval+weekdayType, data = New, FUN = mean)
+
+
+library(ggplot2)
+ggplot(StepsWeekday, aes(x = interval, y = steps)) + 
+  geom_line(col = "red", size = 1) + 
+  facet_wrap(~ weekdayType, nrow=2, ncol=1) + 
+  labs(x = "Interval", y = "Number of Steps")
+
+```
+
